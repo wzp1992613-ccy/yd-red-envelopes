@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RedPacket 测试页</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", sans-serif;
+        background: #0b1220;
+        color: #f3f4f6;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: radial-gradient(circle at top, #1c2b4c 0%, #0b1220 60%);
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background: rgba(5, 10, 24, 0.92);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      header button {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 999px;
+        background: #10b981;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      header select {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        padding: 0.45rem 0.9rem;
+      }
+
+      main {
+        flex: 1;
+        padding: 2rem;
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .card {
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .card h2 {
+        margin-top: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
+      .grid > div {
+        min-width: 0;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-size: 0.9rem;
+      }
+
+      input,
+      select,
+      button {
+        font-size: 1rem;
+        border-radius: 10px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #f9fafb;
+      }
+
+      button.primary {
+        border: none;
+        background: #3b82f6;
+        color: #fff;
+        padding: 0.6rem 1.2rem;
+        cursor: pointer;
+      }
+
+      button.primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-top: 0.8rem;
+        padding: 0.5rem 0.8rem;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.06);
+        font-size: 0.9rem;
+      }
+
+      .status.error {
+        color: #fecaca;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+      }
+
+      .info-box {
+        padding: 0.8rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      ul.log {
+        margin: 0.5rem 0 0;
+        padding-left: 1.1rem;
+        max-height: 160px;
+        overflow: auto;
+      }
+
+      footer {
+        text-align: center;
+        padding: 1rem;
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>RedPacket 测试页</h1>
+      <div>
+        <span id="account-label">未连接钱包</span>
+        <button id="connect-wallet">连接钱包</button>
+      </div>
+      <div>
+        <select id="chain-select">
+          <option value="0x1691">Ganache 5777</option>
+          <option value="0x539">Local 1337</option>
+          <option value="0x1">Ethereum Mainnet</option>
+          <option value="0xaa36a7">Sepolia 11155111</option>
+        </select>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>合约配置（读取 RedPacket.json）</h2>
+        <div class="grid">
+          <div>
+            <label for="contract-address">合约地址</label>
+            <input id="contract-address" type="text" />
+          </div>
+          <div>
+            <label for="rpc-url">RPC 地址</label>
+            <input id="rpc-url" type="text" value="http://127.0.0.1:7545" />
+          </div>
+        </div>
+        <div id="status" class="status">请连接钱包并确认网络</div>
+      </section>
+
+      <section class="card">
+        <h2>发红包</h2>
+        <form id="create-form">
+          <div class="grid">
+            <div>
+              <label for="amount">总金额（ETH）</label>
+              <input id="amount" type="number" step="0.0001" min="0" required />
+            </div>
+            <div>
+              <label for="count">红包数量</label>
+              <input id="count-input" type="number" step="1" min="1" required />
+            </div>
+            <div>
+              <label for="equal-mode">分发方式</label>
+              <select id="equal-mode">
+                <option value="true">等额</option>
+                <option value="false" selected>随机</option>
+              </select>
+            </div>
+          </div>
+          <button class="primary" type="submit">发红包</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>抢红包</h2>
+        <p id="grabbed-hint" class="status">未加载轮次</p>
+        <button id="grab-btn" class="primary" disabled>抢一个红包</button>
+      </section>
+
+      <section class="card">
+        <h2>当前状态</h2>
+        <div class="info-grid">
+          <div class="info-box">
+            <strong>剩余份数</strong>
+            <p id="info-count">-</p>
+          </div>
+          <div class="info-box">
+            <strong>当前余额</strong>
+            <p id="info-balance">-</p>
+          </div>
+          <div class="info-box">
+            <strong>等额模式</strong>
+            <p id="info-equal">-</p>
+          </div>
+          <div class="info-box">
+            <strong>轮次 ID</strong>
+            <p id="info-round">-</p>
+          </div>
+        </div>
+        <div class="status">
+          事件日志
+          <ul id="event-log" class="log"></ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>请使用 http 方式打开页面，确保 MetaMask 能正常弹窗</footer>
+
+    <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="./node_modules/ethers/dist/ethers.umd.min.js"></script>
+    <script>
+      const RPC_URL = "http://127.0.0.1:7545";
+      const EXPECTED_CHAIN_IDS = new Set([1337n]);
+      const CONTRACT_JSON = "./RedPacket.json";
+
+      let provider;
+      let signer;
+      let contract;
+      let artifact;
+      let connectedAccount;
+      let isConnecting = false;
+
+      function setStatus(message, isError = false) {
+        $("#status").text(message);
+        $("#status").toggleClass("error", isError);
+      }
+
+      function addLog(message) {
+        const item = $("<li></li>").text(message);
+        $("#event-log").prepend(item);
+      }
+
+      function formatEth(value) {
+        return ethers.formatEther(value || 0n);
+      }
+
+      function parseEth(value) {
+        return ethers.parseEther(value);
+      }
+
+      function toBigInt(value) {
+        if (typeof value === "bigint") return value;
+        return BigInt(value || 0);
+      }
+
+      function normalizeAddress(raw) {
+        const match = raw.match(/0x[a-fA-F0-9]{40}/);
+        return match ? match[0] : "";
+      }
+
+      async function loadArtifact() {
+        const response = await fetch(CONTRACT_JSON, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("无法读取 RedPacket.json");
+        }
+        artifact = await response.json();
+        const network = artifact.networks?.["5777"];
+        if (network?.address) {
+          $("#contract-address").val(network.address);
+        }
+      }
+
+      async function initRpcProvider() {
+        provider = new ethers.JsonRpcProvider($("#rpc-url").val().trim() || RPC_URL);
+      }
+
+      async function checkChainId() {
+        const net = await provider.getNetwork();
+        const chainId = toBigInt(net.chainId);
+        console.log(chainId);
+        if (!EXPECTED_CHAIN_IDS.has(chainId)) {
+          setStatus(`当前链 ID = ${chainId}，请切换到 1337`, true);
+          return false;
+        }
+        return true;
+      }
+
+      async function connectWallet() {
+        if (isConnecting) {
+          setStatus("连接请求已发送，请在 MetaMask 中确认", true);
+          return;
+        }
+        if (!window.ethereum) {
+          setStatus("未检测到 MetaMask", true);
+          return;
+        }
+        isConnecting = true;
+        try {
+          await window.ethereum.request({ method: "eth_requestAccounts" });
+          provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          connectedAccount = await signer.getAddress();
+          $("#account-label").text(connectedAccount);
+          await checkChainId();
+          await initContract();
+        } catch (err) {
+          console.error(err);
+          setStatus("连接钱包失败：" + err.message, true);
+        } finally {
+          isConnecting = false;
+        }
+      }
+
+      async function switchChain(chainIdHex) {
+        if (!window.ethereum) {
+          setStatus("未检测到 MetaMask", true);
+          return;
+        }
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: chainIdHex }]
+          });
+        } catch (err) {
+          if (err.code === 4902 && chainIdHex === "0x1691") {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: "0x1691",
+                  chainName: "Ganache 5777",
+                  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                  rpcUrls: [RPC_URL]
+                }
+              ]
+            });
+          } else {
+            setStatus("切换网络失败：" + err.message, true);
+          }
+        }
+      }
+
+      async function initContract() {
+        if (!artifact) {
+          await loadArtifact();
+        }
+        const address = normalizeAddress($("#contract-address").val().trim());
+        if (!ethers.isAddress(address)) {
+          setStatus("请输入合法的合约地址", true);
+          return;
+        }
+        const chainOk = await checkChainId();
+        if (!chainOk) return;
+
+        contract = new ethers.Contract(address, artifact.abi, signer || provider);
+        setStatus("合约已连接，状态同步中…");
+        attachEvents();
+        await refreshState();
+      }
+
+      function attachEvents() {
+        if (!contract) return;
+        contract.removeAllListeners();
+        contract.on("PacketCreated", (sender, amount, count, isEqual, roundId) => {
+          const label = isEqual ? "等额" : "随机";
+          addLog(`新红包：${formatEth(amount)} ETH / ${count.toString()} 份 / ${label}`);
+          refreshState();
+        });
+        contract.on("PacketGrabbed", (sender, amount, roundId) => {
+          const who = connectedAccount && sender.toLowerCase() === connectedAccount.toLowerCase() ? "你" : "其他人";
+          addLog(`${who} 抢到 ${formatEth(amount)} ETH（轮次 ${roundId.toString()}）`);
+          refreshState();
+        });
+      }
+
+      async function refreshState() {
+        if (!contract) return;
+        try {
+          const [count, balance, isEqual, roundId] = await Promise.all([
+            contract.count(),
+            contract.getBalance(),
+            contract.isEqual(),
+            contract.roundId()
+          ]);
+          const countValue = toBigInt(count);
+          $("#info-count").text(countValue.toString());
+          $("#info-balance").text(`${formatEth(balance)} ETH`);
+          $("#info-equal").text(isEqual ? "等额" : "随机");
+          $("#info-round").text(toBigInt(roundId).toString());
+
+          if (countValue === 0n) {
+            $("#grabbed-hint").text("红包已抢完");
+            $("#grab-btn").prop("disabled", true);
+          } else if (connectedAccount) {
+            const grabbed = await contract.grabbedRound(connectedAccount);
+            if (toBigInt(grabbed) === toBigInt(roundId)) {
+              $("#grabbed-hint").text("你已经抢过本轮红包");
+              $("#grab-btn").prop("disabled", true);
+            } else {
+              $("#grabbed-hint").text("可以抢红包");
+              $("#grab-btn").prop("disabled", false);
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          setStatus("同步失败：" + err.message, true);
+        }
+      }
+
+      $("#connect-wallet").on("click", connectWallet);
+
+      $("#chain-select").on("change", async function () {
+        await switchChain($(this).val());
+      });
+
+      $("#contract-address").on("change", initContract);
+
+      $("#create-form").on("submit", async function (event) {
+        event.preventDefault();
+        if (!contract || !signer) {
+          setStatus("请先连接钱包", true);
+          return;
+        }
+
+        const amount = $("#amount").val();
+        const count = $("#count-input").val();
+        const isEqual = $("#equal-mode").val() === "true";
+
+        if (!amount || !count) {
+          setStatus("金额和数量不能为空", true);
+          return;
+        }
+
+        const weiAmount = parseEth(amount.toString());
+        if (weiAmount <= 0n) {
+          setStatus("金额必须大于 0", true);
+          return;
+        }
+        if (BigInt(count) <= 0n) {
+          setStatus("红包数量必须大于 0", true);
+          return;
+        }
+        if (weiAmount < BigInt(count)) {
+          setStatus("总金额需 >= 红包数量（最小 1 wei/份）", true);
+          return;
+        }
+
+        try {
+          const tx = await contract.createRedPacket(count, isEqual, { value: weiAmount });
+          setStatus("等待发红包交易确认…");
+          await tx.wait();
+          setStatus("红包创建成功");
+        } catch (err) {
+          console.error(err);
+          setStatus("发红包失败：" + (err.data?.message || err.message), true);
+        }
+      });
+
+      $("#grab-btn").on("click", async function () {
+        if (!contract || !signer) {
+          setStatus("请先连接钱包", true);
+          return;
+        }
+        try {
+          const tx = await contract.grabRedPacket();
+          setStatus("正在抢红包…");
+          await tx.wait();
+          setStatus("抢红包成功");
+        } catch (err) {
+          console.error(err);
+          setStatus("抢红包失败：" + (err.data?.message || err.message), true);
+        }
+      });
+
+      $(document).ready(async () => {
+        if (location.protocol === "file:") {
+          setStatus("请使用 http 打开页面，否则无法读取 RedPacket.json", true);
+        }
+        $("#rpc-url").val(RPC_URL);
+        try {
+          await loadArtifact();
+          await initRpcProvider();
+          await initContract();
+        } catch (err) {
+          setStatus("初始化失败：" + err.message, true);
+        }
+        if (window.ethereum) {
+          window.ethereum.on("accountsChanged", connectWallet);
+          window.ethereum.on("chainChanged", () => location.reload());
+        }
+      });
+    </script>
+  </body>
+</html>
